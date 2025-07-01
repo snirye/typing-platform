@@ -115,7 +115,7 @@ func (r *Renderer) renderGameplay(g *Game) string {
 	r.drawPlayer(grid, g.Player)
 
 	// Convert grid to string
-	for y := 0; y < r.height-3; y++ { // Leave space for HUD
+	for y := 0; y < r.height-4; y++ { // Leave space for HUD (4 lines: border + stats + wpm + current word)
 		for x := 0; x < r.width; x++ {
 			if x < len(grid[y]) && y < len(grid) {
 				sb.WriteRune(grid[y][x])
@@ -206,15 +206,22 @@ func (r *Renderer) renderHUD(g *Game) string {
 	// HUD line 2: WPM and CPM
 	line2 := fmt.Sprintf("WPM: %.1f | CPM: %.1f | Words: %d", stats.WPM, stats.CPM, stats.WordsTyped)
 
-	// Current word display
+	// Current word display - always show status
 	currentWord := ""
-	if len(g.Platforms) > 0 {
+	if len(g.Platforms) > 0 && g.Player.Platform < len(g.Platforms) {
 		platform := g.Platforms[g.Player.Platform]
 		if !platform.Complete {
-			typed := ColorGreen + platform.Typed + ColorReset
+			// Show current word with progress highlighting
+			typed := ColorGreen + "[" + platform.Typed + "]" + ColorReset
 			remaining := ColorWhite + platform.Word[len(platform.Typed):] + ColorReset
 			currentWord = fmt.Sprintf("Word: %s%s", typed, remaining)
+		} else {
+			// Show completed word in green
+			currentWord = fmt.Sprintf("Word: %s%s%s (Complete!)", ColorGreen, platform.Word, ColorReset)
 		}
+	} else {
+		// No active platform
+		currentWord = "Word: " + ColorYellow + "No active word" + ColorReset
 	}
 
 	return fmt.Sprintf("%s\n%s\n%s\n%s\n",
@@ -244,10 +251,15 @@ func (r *Renderer) drawPlatform(grid [][]rune, platform Platform) {
 			}
 		}
 
-		// Draw word below platform
+		// Draw word below platform with typed indicator
 		if screenY+1 < len(grid)-3 && !platform.Complete {
-			wordX := platform.X + platform.Width/2 - len(platform.Word)/2
-			for i, char := range platform.Word {
+			// Create display string with typed characters in brackets
+			typedPart := "[" + platform.Typed + "]"
+			remainingPart := platform.Word[len(platform.Typed):]
+			displayWord := typedPart + remainingPart
+
+			wordX := platform.X + platform.Width/2 - len(displayWord)/2
+			for i, char := range displayWord {
 				if wordX+i >= 0 && wordX+i < len(grid[screenY+1]) {
 					grid[screenY+1][wordX+i] = char
 				}

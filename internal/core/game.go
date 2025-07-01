@@ -5,7 +5,12 @@ import (
 	"time"
 )
 
-const platformSpacing = 10 // spacing between platforms
+const (
+	platformSpacing        = 10   // spacing between platforms
+	initialScrollSpeed     = 5.0  // initial scroll speed in pixels per second
+	speedIncreaseFactor    = 1.05 // factor by which speed increases after each word
+	speedIncreaseThreshold = 5    // increase speed every 5 words typed
+)
 
 // NewGame creates a new game instance with logging to the specified file
 // logsPath: path to the log file for debug output
@@ -17,7 +22,7 @@ func NewGame(logsPath string) (*Game, error) {
 	logger.Println("NewGame: initializing game")
 	game := &Game{
 		State:       StateMenu,
-		ScrollSpeed: 5.0, // pixels per second - increased for visible scrolling. default to 5.0
+		ScrollSpeed: initialScrollSpeed, // pixels per second - increased for visible scrolling. default to 5.0
 		WordManager: NewWordManager(),
 		ShouldExit:  false,
 		Logger:      logger,
