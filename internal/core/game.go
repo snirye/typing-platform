@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const platformSpacing = 10 // spacing between platforms
+
 // NewGame creates a new game instance with logging to the specified file
 // logsPath: path to the log file for debug output
 func NewGame(logsPath string) (*Game, error) {
@@ -285,13 +287,13 @@ func (g *Game) generateInitialPlatforms() {
 	}
 	g.Platforms = append(g.Platforms, startPlatform)
 
-	// Generate platforms going upward (decreasing Y values) for progression
+	// Generate only a few initial platforms to start - more will be generated dynamically
 	currentY := startPlatform.Y
-	for i := 1; i < 15; i++ { // Generate more initial platforms
+	for i := 1; i < 4; i++ { // Generate fewer initial platforms
 		// Vary X position across screen width
 		xPos := 20 + (i%4)*(g.Width-40)/4
 		// Ensure minimum platform spacing going upward
-		currentY -= 10 + (i % 3) // Vary vertical spacing upward
+		currentY -= platformSpacing + (i % 3) // Increase spacing between platforms
 
 		platform := Platform{
 			X:        xPos,
@@ -319,25 +321,24 @@ func (g *Game) generateMorePlatforms() {
 		}
 	}
 
-	// Generate new platforms when the highest platform gets close to being visible
-	if highestY > -200 { // Generate when platforms are 200 pixels above screen
-		numNewPlatforms := 8
-		for i := 0; i < numNewPlatforms; i++ {
-			// Vary X position across the screen
-			xPos := 30 + (i%5)*(g.Width-60)/5
-			// Place new platforms above the current highest
-			newY := highestY - 60 - i*45 // Consistent upward spacing
+	// Generate a new platform when the highest platform is within 10 pixels of the top
+	if highestY <= platformSpacing {
+		// Create a random X position across the screen width
+		xPos := 30 + (len(g.Platforms)%5)*(g.Width-60)/5
+		// Place new platform above the current highest with consistent spacing
+		newY := highestY - platformSpacing // Fixed spacing between platforms
 
-			platform := Platform{
-				X:        xPos,
-				Y:        newY,
-				Width:    12 + (i%4)*6,
-				Word:     g.WordManager.GetRandomWord(),
-				Typed:    "",
-				Complete: false,
-			}
-			g.Platforms = append(g.Platforms, platform)
+		platform := Platform{
+			X:        xPos,
+			Y:        newY,
+			Width:    12 + (len(g.Platforms)%4)*6,
+			Word:     g.WordManager.GetRandomWord(),
+			Typed:    "",
+			Complete: false,
 		}
+		g.Platforms = append(g.Platforms, platform)
+
+		g.Logger.Printf("Generated new platform at Y=%d (highest was at Y=%d)", newY, highestY)
 	}
 }
 
