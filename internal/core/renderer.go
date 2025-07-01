@@ -89,6 +89,11 @@ func (r *Renderer) renderMenu(g *Game) string {
 func (r *Renderer) renderGameplay(g *Game) string {
 	var sb strings.Builder
 
+	// Use the logger for debug output. This shows actual platform positions since they're now updated directly by game logic.
+	for i, p := range g.Platforms {
+		g.Logger.Printf("Platform %d: X=%d Y=%d Complete=%v\n", i, p.X, p.Y, p.Complete)
+	}
+
 	// Clear screen
 	sb.WriteString("\033[2J\033[H")
 
@@ -103,11 +108,11 @@ func (r *Renderer) renderGameplay(g *Game) string {
 
 	// Draw platforms
 	for _, platform := range g.Platforms {
-		r.drawPlatform(grid, platform, int(g.ScrollOffset))
+		r.drawPlatform(grid, platform)
 	}
 
 	// Draw player
-	r.drawPlayer(grid, g.Player, int(g.ScrollOffset))
+	r.drawPlayer(grid, g.Player)
 
 	// Convert grid to string
 	for y := 0; y < r.height-3; y++ { // Leave space for HUD
@@ -226,9 +231,9 @@ func (r *Renderer) writeAtPosition(sb *strings.Builder, x, y int, text string) {
 	}
 }
 
-func (r *Renderer) drawPlatform(grid [][]rune, platform Platform, scrollOffset int) {
-	// Calculate screen position: platform moves down as we scroll up
-	screenY := platform.Y + scrollOffset
+func (r *Renderer) drawPlatform(grid [][]rune, platform Platform) {
+	// Platform Y position is now its actual screen position
+	screenY := platform.Y
 
 	// Only draw if platform is visible on screen
 	if screenY >= 0 && screenY < len(grid)-3 {
@@ -251,9 +256,9 @@ func (r *Renderer) drawPlatform(grid [][]rune, platform Platform, scrollOffset i
 	}
 }
 
-func (r *Renderer) drawPlayer(grid [][]rune, player Player, scrollOffset int) {
-	// Calculate player's screen position
-	screenY := player.Y + scrollOffset
+func (r *Renderer) drawPlayer(grid [][]rune, player Player) {
+	// Player Y position is now its actual screen position
+	screenY := player.Y
 
 	if screenY >= 0 && screenY < len(grid)-3 && player.X >= 0 && player.X < len(grid[0]) {
 		grid[screenY][player.X] = '@'

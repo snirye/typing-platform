@@ -15,7 +15,7 @@ func NewGame(logsPath string) (*Game, error) {
 	logger.Println("NewGame: initializing game")
 	game := &Game{
 		State:       StateMenu,
-		ScrollSpeed: 3.0, // pixels per second - increased for visible scrolling. default to 3.0
+		ScrollSpeed: 5.0, // pixels per second - increased for visible scrolling. default to 5.0
 		WordManager: NewWordManager(),
 		ShouldExit:  false,
 		Logger:      logger,
@@ -85,6 +85,7 @@ func (g *Game) reset() {
 	g.CharsTyped = 0
 	g.StartTime = time.Now()
 	g.ScrollOffset = 0
+	g.ScrollAccumulator = 0 // Reset scroll accumulator
 	g.Player = Player{
 		X:        g.Width / 2,
 		Y:        g.Height/4 - 1, // Position player on the starting platform in upper portion
@@ -219,20 +220,44 @@ func (g *Game) jumpToNextPlatform() {
 
 func (g *Game) updateGameLogic() {
 	// g.Logger.Println("updateGameLogic")
-	// Update scroll offset - platforms scroll down, creating upward movement effect
+	// Calculate scroll movement - platforms scroll down, creating upward movement effect
 	deltaTime := 1.0 / 60.0 // Assume 60 FPS
-	g.ScrollOffset += g.ScrollSpeed * deltaTime
+	scrollDelta := g.ScrollSpeed * deltaTime
 
-	// Update player position based on current platform
+	// Accumulate fractional scroll amounts - this ensures smooth scrolling at any speed
+	g.ScrollAccumulator += scrollDelta
+
+	// Only move platforms when we have accumulated at least 1 full pixel
+	pixelMovement := 0
+	if g.ScrollAccumulator >= 1.0 {
+		pixelMovement = int(g.ScrollAccumulator)
+		g.ScrollAccumulator -= float64(pixelMovement) // Keep the fractional remainder
+	}
+
+	// Debug: Log the scroll values
+	g.Logger.Printf("updateGameLogic: scrollDelta=%.3f, accumulator=%.3f, pixelMovement=%d",
+		scrollDelta, g.ScrollAccumulator, pixelMovement)
+
+	// Update all platform positions only if we have movement
+	if pixelMovement > 0 {
+		for i := range g.Platforms {
+			oldY := g.Platforms[i].Y
+			g.Platforms[i].Y += pixelMovement
+			if i == 0 { // Log first platform movement for debugging
+				g.Logger.Printf("Platform 0: Y changed from %d to %d (moved %d pixels)", oldY, g.Platforms[i].Y, pixelMovement)
+			}
+		}
+	}
+
+	// Update player position to match current platform movement
 	if len(g.Platforms) > 0 && g.Player.Platform < len(g.Platforms) {
 		platform := g.Platforms[g.Player.Platform]
 		g.Player.X = platform.X + platform.Width/2
 		g.Player.Y = platform.Y - 1 // Player sits on top of platform
 	}
 
-	// Check if player fell off screen (relative to scroll)
-	visiblePlayerY := g.Player.Y + int(g.ScrollOffset)
-	if visiblePlayerY >= g.Height-3 {
+	// Check if player fell off screen (now using direct Y position)
+	if g.Player.Y >= g.Height-3 {
 		g.Logger.Println("updateGameLogic: player fell off screen, game over")
 		g.State = StateGameOver
 		return
@@ -295,9 +320,7 @@ func (g *Game) generateMorePlatforms() {
 	}
 
 	// Generate new platforms when the highest platform gets close to being visible
-	// We want platforms to appear at the top of screen as we scroll up
-	scrolledHighestY := highestY + int(g.ScrollOffset)
-	if scrolledHighestY > -200 { // Generate when platforms are 200 pixels above screen
+	if highestY > -200 { // Generate when platforms are 200 pixels above screen
 		numNewPlatforms := 8
 		for i := 0; i < numNewPlatforms; i++ {
 			// Vary X position across the screen
@@ -321,7 +344,7 @@ func (g *Game) generateMorePlatforms() {
 func (g *Game) cleanupPlatforms() {
 	// g.Logger.Println("cleanupPlatforms")
 	// Remove platforms that have scrolled far below the screen
-	bottomThreshold := int(g.ScrollOffset) + g.Height + 100
+	bottomThreshold := g.Height + 100
 
 	newPlatforms := make([]Platform, 0)
 	playerPlatformFound := false
@@ -329,7 +352,7 @@ func (g *Game) cleanupPlatforms() {
 
 	for i, platform := range g.Platforms {
 		// Keep platforms that are still relevant (not too far below screen)
-		if platform.Y+int(g.ScrollOffset) < bottomThreshold {
+		if platform.Y < bottomThreshold {
 			newPlatforms = append(newPlatforms, platform)
 			// Track player's platform in the new array
 			if i == g.Player.Platform {

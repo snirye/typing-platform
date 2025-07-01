@@ -38,21 +38,22 @@ type Platform struct {
 
 // Game holds the game state and logic
 type Game struct {
-	State        GameState
-	Width        int
-	Height       int
-	Player       Player
-	Platforms    []Platform
-	Score        int
-	StartTime    time.Time
-	WordsTyped   int
-	CharsTyped   int
-	ShouldExit   bool
-	ScrollSpeed  float64
-	ScrollOffset float64
-	WordManager  *WordManager
-	Renderer     *Renderer
-	Logger       *Logger // Add a Logger field for debug logging
+	State             GameState
+	Width             int
+	Height            int
+	Player            Player
+	Platforms         []Platform
+	Score             int
+	StartTime         time.Time
+	WordsTyped        int
+	CharsTyped        int
+	ShouldExit        bool
+	ScrollSpeed       float64
+	ScrollOffset      float64
+	ScrollAccumulator float64 // Accumulates fractional scroll amounts
+	WordManager       *WordManager
+	Renderer          *Renderer
+	Logger            *Logger // Add a Logger field for debug logging
 }
 
 // Stats represents game statistics
