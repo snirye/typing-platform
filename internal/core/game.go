@@ -196,6 +196,13 @@ func (g *Game) completeWord(platform *Platform) {
 		g.Score += speedBonus
 	}
 
+	// Increase scroll speed every speedIncreaseThreshold words - progressive difficulty
+	if g.WordsTyped%speedIncreaseThreshold == 0 {
+		oldSpeed := g.ScrollSpeed
+		g.ScrollSpeed *= speedIncreaseFactor
+		g.Logger.Printf("Speed increased from %.2f to %.2f after %d words", oldSpeed, g.ScrollSpeed, g.WordsTyped)
+	}
+
 	// Move player to next platform
 	g.jumpToNextPlatform()
 }
