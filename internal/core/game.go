@@ -249,17 +249,17 @@ func (g *Game) updateGameLogic() {
 	}
 
 	// Debug: Log the scroll values
-	g.Logger.Printf("updateGameLogic: scrollDelta=%.3f, accumulator=%.3f, pixelMovement=%d",
-		scrollDelta, g.ScrollAccumulator, pixelMovement)
+	// g.Logger.Printf("updateGameLogic: scrollDelta=%.3f, accumulator=%.3f, pixelMovement=%d",
+	// scrollDelta, g.ScrollAccumulator, pixelMovement)
 
 	// Update all platform positions only if we have movement
 	if pixelMovement > 0 {
 		for i := range g.Platforms {
-			oldY := g.Platforms[i].Y
+			// oldY := g.Platforms[i].Y
 			g.Platforms[i].Y += pixelMovement
-			if i == 0 { // Log first platform movement for debugging
-				g.Logger.Printf("Platform 0: Y changed from %d to %d (moved %d pixels)", oldY, g.Platforms[i].Y, pixelMovement)
-			}
+			// if i == 0 { // Log first platform movement for debugging
+			// 	g.Logger.Printf("Platform 0: Y changed from %d to %d (moved %d pixels)", oldY, g.Platforms[i].Y, pixelMovement)
+			// }
 		}
 	}
 
@@ -350,7 +350,7 @@ func (g *Game) generateMorePlatforms() {
 		}
 		g.Platforms = append(g.Platforms, platform)
 
-		g.Logger.Printf("Generated new platform at Y=%d (highest was at Y=%d)", newY, highestY)
+		// g.Logger.Printf("Generated new platform at Y=%d (highest was at Y=%d)", newY, highestY)
 	}
 }
 

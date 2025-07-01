@@ -90,9 +90,9 @@ func (r *Renderer) renderGameplay(g *Game) string {
 	var sb strings.Builder
 
 	// Use the logger for debug output. This shows actual platform positions since they're now updated directly by game logic.
-	for i, p := range g.Platforms {
-		g.Logger.Printf("Platform %d: X=%d Y=%d Complete=%v\n", i, p.X, p.Y, p.Complete)
-	}
+	// for i, p := range g.Platforms {
+	// 	g.Logger.Printf("Platform %d: X=%d Y=%d Complete=%v\n", i, p.X, p.Y, p.Complete)
+	// }
 
 	// Clear screen
 	sb.WriteString("\033[2J\033[H")
