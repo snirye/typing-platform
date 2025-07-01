@@ -107,7 +107,7 @@ func (r *Renderer) renderGameplay(g *Game) string {
 	}
 
 	// Draw player
-	r.drawPlayer(grid, g.Player)
+	r.drawPlayer(grid, g.Player, int(g.ScrollOffset))
 
 	// Convert grid to string
 	for y := 0; y < r.height-3; y++ { // Leave space for HUD
@@ -227,32 +227,36 @@ func (r *Renderer) writeAtPosition(sb *strings.Builder, x, y int, text string) {
 }
 
 func (r *Renderer) drawPlatform(grid [][]rune, platform Platform, scrollOffset int) {
-	y := platform.Y - scrollOffset
+	// Calculate screen position: platform moves down as we scroll up
+	screenY := platform.Y + scrollOffset
 
-	// Only draw if platform is visible
-	if y >= 0 && y < len(grid)-3 {
+	// Only draw if platform is visible on screen
+	if screenY >= 0 && screenY < len(grid)-3 {
 		// Draw platform line
-		for i := 0; i < platform.Width && platform.X+i < len(grid[y]); i++ {
+		for i := 0; i < platform.Width && platform.X+i < len(grid[screenY]); i++ {
 			if platform.X+i >= 0 {
-				grid[y][platform.X+i] = '='
+				grid[screenY][platform.X+i] = '='
 			}
 		}
 
 		// Draw word below platform
-		if y+1 < len(grid)-3 && !platform.Complete {
+		if screenY+1 < len(grid)-3 && !platform.Complete {
 			wordX := platform.X + platform.Width/2 - len(platform.Word)/2
 			for i, char := range platform.Word {
-				if wordX+i >= 0 && wordX+i < len(grid[y+1]) {
-					grid[y+1][wordX+i] = char
+				if wordX+i >= 0 && wordX+i < len(grid[screenY+1]) {
+					grid[screenY+1][wordX+i] = char
 				}
 			}
 		}
 	}
 }
 
-func (r *Renderer) drawPlayer(grid [][]rune, player Player) {
-	if player.Y >= 0 && player.Y < len(grid)-3 && player.X >= 0 && player.X < len(grid[0]) {
-		grid[player.Y][player.X] = '@'
+func (r *Renderer) drawPlayer(grid [][]rune, player Player, scrollOffset int) {
+	// Calculate player's screen position
+	screenY := player.Y + scrollOffset
+
+	if screenY >= 0 && screenY < len(grid)-3 && player.X >= 0 && player.X < len(grid[0]) {
+		grid[screenY][player.X] = '@'
 	}
 }
 

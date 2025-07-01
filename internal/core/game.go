@@ -9,7 +9,7 @@ import (
 func NewGame() *Game {
 	game := &Game{
 		State:       StateMenu,
-		ScrollSpeed: 10.0, // pixels per second
+		ScrollSpeed: 3.0, // pixels per second - increased for visible scrolling. default to 3.0
 		WordManager: NewWordManager(),
 		ShouldExit:  false,
 	}
@@ -75,7 +75,7 @@ func (g *Game) reset() {
 	g.ScrollOffset = 0
 	g.Player = Player{
 		X:        g.Width / 2,
-		Y:        g.Height - 10,
+		Y:        g.Height/4 - 1, // Position player on the starting platform in upper portion
 		Platform: 0,
 	}
 
@@ -198,20 +198,25 @@ func (g *Game) jumpToNextPlatform() {
 }
 
 func (g *Game) updateGameLogic() {
-	// Update scroll offset
+	// Update scroll offset - platforms scroll down, creating upward movement effect
 	deltaTime := 1.0 / 60.0 // Assume 60 FPS
 	g.ScrollOffset += g.ScrollSpeed * deltaTime
 
-	// Update player position based on scroll
-	g.Player.Y = g.Platforms[g.Player.Platform].Y - 1 - int(g.ScrollOffset)
+	// Update player position based on current platform
+	if len(g.Platforms) > 0 && g.Player.Platform < len(g.Platforms) {
+		platform := g.Platforms[g.Player.Platform]
+		g.Player.X = platform.X + platform.Width/2
+		g.Player.Y = platform.Y - 1 // Player sits on top of platform
+	}
 
-	// Check if player fell off screen
-	if g.Player.Y >= g.Height-3 {
+	// Check if player fell off screen (relative to scroll)
+	visiblePlayerY := g.Player.Y + int(g.ScrollOffset)
+	if visiblePlayerY >= g.Height-3 {
 		g.State = StateGameOver
 		return
 	}
 
-	// Generate new platforms as needed
+	// Generate new platforms as screen scrolls up
 	g.generateMorePlatforms()
 
 	// Remove old platforms that are off screen
@@ -221,10 +226,10 @@ func (g *Game) updateGameLogic() {
 func (g *Game) generateInitialPlatforms() {
 	g.Platforms = make([]Platform, 0)
 
-	// Generate starting platform
+	// Generate starting platform near the top but with room for upward progression
 	startPlatform := Platform{
 		X:        g.Width/2 - 10,
-		Y:        g.Height - 5,
+		Y:        g.Height / 4, // Start in upper portion of screen
 		Width:    20,
 		Word:     g.WordManager.GetRandomWord(),
 		Typed:    "",
@@ -232,11 +237,17 @@ func (g *Game) generateInitialPlatforms() {
 	}
 	g.Platforms = append(g.Platforms, startPlatform)
 
-	// Generate additional platforms
-	for i := 1; i < 10; i++ {
+	// Generate platforms going upward (decreasing Y values) for progression
+	currentY := startPlatform.Y
+	for i := 1; i < 15; i++ { // Generate more initial platforms
+		// Vary X position across screen width
+		xPos := 20 + (i%4)*(g.Width-40)/4
+		// Ensure minimum platform spacing going upward
+		currentY -= 40 + (i%3)*20 // Vary vertical spacing upward
+
 		platform := Platform{
-			X:        g.Width/4 + (i%2)*(g.Width/2),
-			Y:        g.Height - 5 - i*50,
+			X:        xPos,
+			Y:        currentY,
 			Width:    15 + (i%3)*10,
 			Word:     g.WordManager.GetRandomWord(),
 			Typed:    "",
@@ -251,7 +262,7 @@ func (g *Game) generateMorePlatforms() {
 		return
 	}
 
-	// Find the highest platform
+	// Find the highest platform (lowest Y value)
 	highestY := g.Platforms[0].Y
 	for _, platform := range g.Platforms {
 		if platform.Y < highestY {
@@ -259,15 +270,21 @@ func (g *Game) generateMorePlatforms() {
 		}
 	}
 
-	// Generate new platforms above the highest one
-	topOfScreen := int(g.ScrollOffset) - 100
-	if highestY > topOfScreen {
-		numNewPlatforms := 5
+	// Generate new platforms when the highest platform gets close to being visible
+	// We want platforms to appear at the top of screen as we scroll up
+	scrolledHighestY := highestY + int(g.ScrollOffset)
+	if scrolledHighestY > -200 { // Generate when platforms are 200 pixels above screen
+		numNewPlatforms := 8
 		for i := 0; i < numNewPlatforms; i++ {
+			// Vary X position across the screen
+			xPos := 30 + (i%5)*(g.Width-60)/5
+			// Place new platforms above the current highest
+			newY := highestY - 60 - i*45 // Consistent upward spacing
+
 			platform := Platform{
-				X:        20 + (i%3)*((g.Width-40)/3),
-				Y:        highestY - 60 - i*50,
-				Width:    10 + (i%4)*5,
+				X:        xPos,
+				Y:        newY,
+				Width:    12 + (i%4)*6,
 				Word:     g.WordManager.GetRandomWord(),
 				Typed:    "",
 				Complete: false,
@@ -278,31 +295,33 @@ func (g *Game) generateMorePlatforms() {
 }
 
 func (g *Game) cleanupPlatforms() {
-	// Remove platforms that are far below the screen
+	// Remove platforms that have scrolled far below the screen
 	bottomThreshold := int(g.ScrollOffset) + g.Height + 100
 
 	newPlatforms := make([]Platform, 0)
-	for i, platform := range g.Platforms {
-		if platform.Y < bottomThreshold {
-			newPlatforms = append(newPlatforms, platform)
-		} else if i == g.Player.Platform {
-			// Don't remove the platform the player is on
-			newPlatforms = append(newPlatforms, platform)
-		}
-	}
+	playerPlatformFound := false
+	newPlayerPlatform := 0
 
-	// Update player platform index if needed
-	if len(newPlatforms) < len(g.Platforms) {
-		for i, platform := range newPlatforms {
-			if platform.X == g.Platforms[g.Player.Platform].X &&
-				platform.Y == g.Platforms[g.Player.Platform].Y {
-				g.Player.Platform = i
-				break
+	for i, platform := range g.Platforms {
+		// Keep platforms that are still relevant (not too far below screen)
+		if platform.Y+int(g.ScrollOffset) < bottomThreshold {
+			newPlatforms = append(newPlatforms, platform)
+			// Track player's platform in the new array
+			if i == g.Player.Platform {
+				newPlayerPlatform = len(newPlatforms) - 1
+				playerPlatformFound = true
 			}
 		}
 	}
 
+	// Update platforms array and player platform index
 	g.Platforms = newPlatforms
+	if playerPlatformFound {
+		g.Player.Platform = newPlayerPlatform
+	} else if len(g.Platforms) > 0 {
+		// If player's platform was removed, move to closest available platform
+		g.Player.Platform = 0
+	}
 }
 
 // GetStats returns current game statistics
