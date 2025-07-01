@@ -291,7 +291,7 @@ func (g *Game) generateInitialPlatforms() {
 		// Vary X position across screen width
 		xPos := 20 + (i%4)*(g.Width-40)/4
 		// Ensure minimum platform spacing going upward
-		currentY -= 40 + (i%3)*20 // Vary vertical spacing upward
+		currentY -= 10 + (i % 3) // Vary vertical spacing upward
 
 		platform := Platform{
 			X:        xPos,
