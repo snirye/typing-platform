@@ -5,20 +5,28 @@ import (
 	"time"
 )
 
-// NewGame creates a new game instance
-func NewGame() *Game {
+// NewGame creates a new game instance with logging to the specified file
+// logsPath: path to the log file for debug output
+func NewGame(logsPath string) (*Game, error) {
+	logger, err := NewLogger(logsPath)
+	if err != nil {
+		return nil, err
+	}
+	logger.Println("NewGame: initializing game")
 	game := &Game{
 		State:       StateMenu,
 		ScrollSpeed: 3.0, // pixels per second - increased for visible scrolling. default to 3.0
 		WordManager: NewWordManager(),
 		ShouldExit:  false,
+		Logger:      logger,
 	}
-
-	return game
+	logger.Println("NewGame: game struct created")
+	return game, nil
 }
 
 // Start initializes the game with given dimensions
 func (g *Game) Start(width, height int) {
+	g.Logger.Printf("Start: width=%d, height=%d", width, height)
 	g.Width = width
 	g.Height = height
 	g.Renderer = NewRenderer(width, height)
@@ -27,6 +35,7 @@ func (g *Game) Start(width, height int) {
 
 // UpdateDimensions updates the game dimensions
 func (g *Game) UpdateDimensions(width, height int) {
+	g.Logger.Printf("UpdateDimensions: width=%d, height=%d", width, height)
 	g.Width = width
 	g.Height = height
 	if g.Renderer != nil {
@@ -36,6 +45,7 @@ func (g *Game) UpdateDimensions(width, height int) {
 
 // ProcessInput handles user input
 func (g *Game) ProcessInput(key rune) {
+	g.Logger.Printf("ProcessInput: key=%v, state=%v", key, g.State)
 	switch g.State {
 	case StateMenu:
 		g.processMenuInput(key)
@@ -50,6 +60,7 @@ func (g *Game) ProcessInput(key rune) {
 
 // Render updates game logic and returns the rendered frame
 func (g *Game) Render() string {
+	// g.Logger.Printf("Render: state=%v", g.State)
 	if g.State == StatePlaying {
 		g.updateGameLogic()
 	}
@@ -68,6 +79,7 @@ func (g *Game) ShouldQuit() bool {
 // Private methods
 
 func (g *Game) reset() {
+	g.Logger.Println("reset: resetting game state")
 	g.Score = 0
 	g.WordsTyped = 0
 	g.CharsTyped = 0
@@ -84,6 +96,7 @@ func (g *Game) reset() {
 }
 
 func (g *Game) processMenuInput(key rune) {
+	g.Logger.Printf("processMenuInput: key=%v", key)
 	switch key {
 	case ' ': // Space to start
 		g.State = StatePlaying
@@ -96,6 +109,7 @@ func (g *Game) processMenuInput(key rune) {
 }
 
 func (g *Game) processGameInput(key rune) {
+	g.Logger.Printf("processGameInput: key=%v", key)
 	switch key {
 	case 27: // ESC - pause
 		g.State = StatePaused
@@ -109,6 +123,7 @@ func (g *Game) processGameInput(key rune) {
 }
 
 func (g *Game) processPauseInput(key rune) {
+	g.Logger.Printf("processPauseInput: key=%v", key)
 	switch key {
 	case 27: // ESC - resume
 		g.State = StatePlaying
@@ -118,6 +133,7 @@ func (g *Game) processPauseInput(key rune) {
 }
 
 func (g *Game) processGameOverInput(key rune) {
+	g.Logger.Printf("processGameOverInput: key=%v", key)
 	switch key {
 	case ' ': // Space to restart
 		g.State = StatePlaying
@@ -128,6 +144,7 @@ func (g *Game) processGameOverInput(key rune) {
 }
 
 func (g *Game) handleTyping(key rune) {
+	g.Logger.Printf("handleTyping: key=%v", key)
 	if len(g.Platforms) == 0 {
 		return
 	}
@@ -147,6 +164,7 @@ func (g *Game) handleTyping(key rune) {
 }
 
 func (g *Game) handleBackspace() {
+	g.Logger.Println("handleBackspace")
 	if len(g.Platforms) == 0 {
 		return
 	}
@@ -158,6 +176,7 @@ func (g *Game) handleBackspace() {
 }
 
 func (g *Game) completeWord(platform *Platform) {
+	g.Logger.Printf("completeWord: word=%s", platform.Word)
 	platform.Complete = true
 	g.WordsTyped++
 	g.Score += len(platform.Word) * 10 // Base score
@@ -174,6 +193,7 @@ func (g *Game) completeWord(platform *Platform) {
 }
 
 func (g *Game) jumpToNextPlatform() {
+	g.Logger.Println("jumpToNextPlatform")
 	// Find next available platform above current one
 	currentY := g.Platforms[g.Player.Platform].Y
 	nextPlatformIndex := -1
@@ -198,6 +218,7 @@ func (g *Game) jumpToNextPlatform() {
 }
 
 func (g *Game) updateGameLogic() {
+	// g.Logger.Println("updateGameLogic")
 	// Update scroll offset - platforms scroll down, creating upward movement effect
 	deltaTime := 1.0 / 60.0 // Assume 60 FPS
 	g.ScrollOffset += g.ScrollSpeed * deltaTime
@@ -212,6 +233,7 @@ func (g *Game) updateGameLogic() {
 	// Check if player fell off screen (relative to scroll)
 	visiblePlayerY := g.Player.Y + int(g.ScrollOffset)
 	if visiblePlayerY >= g.Height-3 {
+		g.Logger.Println("updateGameLogic: player fell off screen, game over")
 		g.State = StateGameOver
 		return
 	}
@@ -224,6 +246,7 @@ func (g *Game) updateGameLogic() {
 }
 
 func (g *Game) generateInitialPlatforms() {
+	g.Logger.Println("generateInitialPlatforms")
 	g.Platforms = make([]Platform, 0)
 
 	// Generate starting platform near the top but with room for upward progression
@@ -258,6 +281,7 @@ func (g *Game) generateInitialPlatforms() {
 }
 
 func (g *Game) generateMorePlatforms() {
+	// g.Logger.Println("generateMorePlatforms")
 	if len(g.Platforms) == 0 {
 		return
 	}
@@ -295,6 +319,7 @@ func (g *Game) generateMorePlatforms() {
 }
 
 func (g *Game) cleanupPlatforms() {
+	// g.Logger.Println("cleanupPlatforms")
 	// Remove platforms that have scrolled far below the screen
 	bottomThreshold := int(g.ScrollOffset) + g.Height + 100
 
@@ -326,6 +351,7 @@ func (g *Game) cleanupPlatforms() {
 
 // GetStats returns current game statistics
 func (g *Game) GetStats() Stats {
+	// g.Logger.Println("GetStats")
 	gameTime := time.Since(g.StartTime)
 	minutes := gameTime.Minutes()
 

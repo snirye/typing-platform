@@ -8,7 +8,10 @@ import (
 
 func main() {
 	// Create game engine
-	game := core.NewGame()
+	game, err := core.NewGame("game_log.txt")
+	if err != nil {
+		log.Fatalf("Failed to create game: %v", err)
+	}
 
 	// Create terminal client
 	terminal := client.NewTerminalClient(game)

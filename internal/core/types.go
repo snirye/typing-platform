@@ -52,6 +52,7 @@ type Game struct {
 	ScrollOffset float64
 	WordManager  *WordManager
 	Renderer     *Renderer
+	Logger       *Logger // Add a Logger field for debug logging
 }
 
 // Stats represents game statistics

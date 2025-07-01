@@ -6,7 +6,10 @@ import (
 )
 
 func TestNewGame(t *testing.T) {
-	game := NewGame()
+	game, err := NewGame("test_log.txt")
+	if err != nil {
+		t.Fatalf("NewGame() error: %v", err)
+	}
 
 	if game == nil {
 		t.Fatal("NewGame() returned nil")
@@ -22,7 +25,10 @@ func TestNewGame(t *testing.T) {
 }
 
 func TestGameStart(t *testing.T) {
-	game := NewGame()
+	game, err := NewGame("test_log.txt")
+	if err != nil {
+		t.Fatalf("NewGame() error: %v", err)
+	}
 	game.Start(80, 24)
 
 	if game.Width != 80 || game.Height != 24 {
@@ -39,7 +45,10 @@ func TestGameStart(t *testing.T) {
 }
 
 func TestProcessMenuInput(t *testing.T) {
-	game := NewGame()
+	game, err := NewGame("test_log.txt")
+	if err != nil {
+		t.Fatalf("NewGame() error: %v", err)
+	}
 	game.Start(80, 24)
 
 	// Test space key starts the game
@@ -59,7 +68,10 @@ func TestProcessMenuInput(t *testing.T) {
 }
 
 func TestTypingValidation(t *testing.T) {
-	game := NewGame()
+	game, err := NewGame("test_log.txt")
+	if err != nil {
+		t.Fatalf("NewGame() error: %v", err)
+	}
 	game.Start(80, 24)
 	game.State = StatePlaying
 
@@ -87,7 +99,10 @@ func TestTypingValidation(t *testing.T) {
 }
 
 func TestBackspace(t *testing.T) {
-	game := NewGame()
+	game, err := NewGame("test_log.txt")
+	if err != nil {
+		t.Fatalf("NewGame() error: %v", err)
+	}
 	game.Start(80, 24)
 	game.State = StatePlaying
 
@@ -103,7 +118,10 @@ func TestBackspace(t *testing.T) {
 }
 
 func TestStats(t *testing.T) {
-	game := NewGame()
+	game, err := NewGame("test_log.txt")
+	if err != nil {
+		t.Fatalf("NewGame() error: %v", err)
+	}
 	game.Start(80, 24)
 
 	// Simulate some typing
